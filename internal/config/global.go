@@ -30,13 +30,11 @@ func LoadGlobalConfig() (config *Config, err error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 
-	err = viper.ReadInConfig()
-	if err != nil {
+	if err = viper.ReadInConfig(); err != nil {
 		return
 	}
 
-	err = viper.Unmarshal(&config)
-	if err != nil {
+	if err = viper.Unmarshal(&config); err != nil {
 		return
 	}
 

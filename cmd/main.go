@@ -9,14 +9,14 @@ import (
 )
 
 func main() {
-	logger, err := createLogger()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	cfg, err := config.LoadGlobalConfig()
 	if err != nil {
-		logger.Fatalw("failed to load config", "error", err)
+		log.Fatalf("failed to load config: %v", err)
+	}
+
+	logger, err := createLogger(cfg)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	ctx := context.Background()
@@ -24,8 +24,14 @@ func main() {
 	app.Run(ctx, cfg, logger)
 }
 
-func createLogger() (*zap.SugaredLogger, error) {
-	logger, err := zap.NewProduction()
+func createLogger(cfg *config.Config) (*zap.SugaredLogger, error) {
+	var logger *zap.Logger
+	var err error
+	if cfg.Development {
+		logger, err = zap.NewDevelopment()
+	} else {
+		logger, err = zap.NewProduction()
+	}
 	if err != nil {
 		return nil, err
 	}
