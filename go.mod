@@ -3,7 +3,7 @@ module relationship-manager-service
 go 1.19
 
 require (
-	github.com/emortalmc/proto-specs v0.0.0-20230128185609-b0ada8062847
+	github.com/emortalmc/proto-specs v0.0.0-20230205021056-683c5137db02
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/rabbitmq/amqp091-go v1.6.0

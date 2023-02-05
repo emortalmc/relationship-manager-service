@@ -21,7 +21,9 @@ type Repository interface {
 
 	CreatePlayerBlock(ctx context.Context, block model.PlayerBlock) error
 	DeletePlayerBlock(ctx context.Context, blockerId uuid.UUID, blockedId uuid.UUID) error
-	IsPlayerBlocked(ctx context.Context, blockerId uuid.UUID, blockedId uuid.UUID) (bool, error)
+	// IsPlayerBlocked returns if either player has blocked the other
+	IsPlayerBlocked(ctx context.Context, playerOneId uuid.UUID, playerTwoId uuid.UUID) (bool, error)
+	GetMutualBlocks(ctx context.Context, playerOneId uuid.UUID, playerTwoId uuid.UUID) ([]*model.PlayerBlock, error)
 	GetPlayerBlocks(ctx context.Context, blockerId uuid.UUID) ([]*model.PlayerBlock, error)
 }
 

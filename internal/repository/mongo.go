@@ -209,15 +209,35 @@ func (m *mongoRepository) DeletePlayerBlock(ctx context.Context, blockerId uuid.
 	return nil
 }
 
-func (m *mongoRepository) IsPlayerBlocked(ctx context.Context, blockerId uuid.UUID, blockedId uuid.UUID) (bool, error) {
+func (m *mongoRepository) IsPlayerBlocked(ctx context.Context, playerOneId uuid.UUID, playerTwoId uuid.UUID) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	result, err := m.blockColl.CountDocuments(ctx, bson.M{"blockerId": blockerId, "blockedId": blockedId})
+	result, err := m.blockColl.CountDocuments(ctx, bson.M{"$or": []bson.M{
+		{"blockerId": playerOneId, "blockedId": playerTwoId},
+		{"blockerId": playerTwoId, "blockedId": playerOneId},
+	}})
 	if err != nil {
 		return false, err
 	}
 	return result > 0, nil
+}
+
+func (m *mongoRepository) GetMutualBlocks(ctx context.Context, playerOneId uuid.UUID, playerTwoId uuid.UUID) ([]*model.PlayerBlock, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	cursor, err := m.blockColl.Find(ctx, bson.M{"$or": []bson.M{
+		{"blockerId": playerOneId, "blockedId": playerTwoId},
+		{"blockerId": playerTwoId, "blockedId": playerOneId},
+	}})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*model.PlayerBlock, 0)
+	err = cursor.All(ctx, &result)
+	return result, err
 }
 
 func (m *mongoRepository) GetPlayerBlocks(ctx context.Context, playerId uuid.UUID) ([]*model.PlayerBlock, error) {

@@ -49,11 +49,19 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 		}, nil
 	}
 
-	blocked, err := s.repo.IsPlayerBlocked(ctx, senderId, targetId)
+	blocks, err := s.repo.GetMutualBlocks(ctx, senderId, targetId)
 	if err != nil {
 		return nil, err
 	}
-	if blocked {
+	if len(blocks) > 0 {
+		for _, block := range blocks {
+			if block.ContainsPlayer(senderId) {
+				return &relationship.AddFriendResponse{
+					Result: relationship.AddFriendResponse_YOU_BLOCKED,
+				}, nil
+			}
+		}
+
 		return &relationship.AddFriendResponse{
 			Result: relationship.AddFriendResponse_PRIVACY_BLOCKED,
 		}, nil
@@ -324,13 +332,26 @@ func (s *relationshipService) IsBlocked(ctx context.Context, req *relationship.I
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid target id %s", req.TargetId))
 	}
 
-	isBlocked, err := s.repo.IsPlayerBlocked(ctx, issuerId, targetId)
+	blocks, err := s.repo.GetMutualBlocks(ctx, issuerId, targetId)
 	if err != nil {
 		return nil, err
 	}
 
+	// select the issuer as the block if there is more than 1
+	var block *model.PlayerBlock
+	if len(blocks) > 1 {
+		for _, b := range blocks {
+			if b.BlockedId == issuerId {
+				block = b
+				break
+			}
+		}
+	} else {
+		block = blocks[0]
+	}
+
 	return &relationship.IsBlockedResponse{
-		Blocked: isBlocked,
+		Block: block.ToProto(),
 	}, nil
 }
 
