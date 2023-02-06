@@ -49,6 +49,7 @@ func (r *rabbitMqNotifier) FriendRequest(ctx context.Context, fReq *relationship
 
 	err = r.channel.PublishWithContext(ctx, "mc:proxy:all", "", false, false, amqp.Publishing{
 		ContentType: "application/x-protobuf",
+		Type:        string(msg.ProtoReflect().Descriptor().FullName()),
 		Body:        bytes,
 	})
 	if err != nil {
@@ -74,6 +75,32 @@ func (r *rabbitMqNotifier) FriendAdded(ctx context.Context, senderId uuid.UUID, 
 
 	err = r.channel.PublishWithContext(ctx, "mc:proxy:all", "", false, false, amqp.Publishing{
 		ContentType: "application/x-protobuf",
+		Type:        string(msg.ProtoReflect().Descriptor().FullName()),
+		Body:        bytes,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *rabbitMqNotifier) FriendRemoved(ctx context.Context, senderId uuid.UUID, targetId uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, 5)
+	defer cancel()
+
+	msg := &msgModel.FriendRemovedMessage{
+		SenderId:    senderId.String(),
+		RecipientId: targetId.String(),
+	}
+
+	bytes, err := proto.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	err = r.channel.PublishWithContext(ctx, "mc:proxy:all", "", false, false, amqp.Publishing{
+		ContentType: "application/x-protobuf",
+		Type:        string(msg.ProtoReflect().Descriptor().FullName()),
 		Body:        bytes,
 	})
 	if err != nil {

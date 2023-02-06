@@ -94,6 +94,12 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 			return nil, err
 		}
 
+		// delete pending friend connection
+		err = s.repo.DeletePendingFriendConnection(ctx, senderId, targetId)
+		if err != nil {
+			return nil, err
+		}
+
 		go func() {
 			err := s.notif.FriendAdded(ctx, senderId, targetId, req.Request.SenderUsername)
 			if err != nil {
@@ -148,6 +154,8 @@ func (s *relationshipService) RemoveFriend(ctx context.Context, req *relationshi
 		}
 		return nil, err
 	}
+
+	s.notif.FriendRemoved(ctx, senderId, targetId)
 
 	return &relationship.RemoveFriendResponse{
 		Result: relationship.RemoveFriendResponse_REMOVED,
@@ -346,8 +354,12 @@ func (s *relationshipService) IsBlocked(ctx context.Context, req *relationship.I
 				break
 			}
 		}
-	} else {
+	} else if len(blocks) == 1 {
 		block = blocks[0]
+	} else {
+		return &relationship.IsBlockedResponse{
+			Block: nil,
+		}, nil
 	}
 
 	return &relationship.IsBlockedResponse{

@@ -41,9 +41,9 @@ func NewMongoRepository(ctx context.Context, cfg config.MongoDBConfig) (Reposito
 
 	return &mongoRepository{
 		database:    database,
-		friendColl:  database.Collection("friends"),
-		pFriendColl: database.Collection("pending_friends"),
-		blockColl:   database.Collection("blocks"),
+		friendColl:  database.Collection("friend"),
+		pFriendColl: database.Collection("pendingFriend"),
+		blockColl:   database.Collection("block"),
 	}, nil
 }
 
@@ -112,6 +112,17 @@ func (m *mongoRepository) CreatePendingFriendConnection(ctx context.Context, con
 	_, err := m.pFriendColl.InsertOne(ctx, conn)
 	// todo NOTE: already exists is mongo.IsDuplicateKeyError(err)
 	return err
+}
+
+func (m *mongoRepository) DoesPendingFriendConnectionExist(ctx context.Context, requesterId uuid.UUID, targetId uuid.UUID) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	result, err := m.pFriendColl.CountDocuments(ctx, bson.M{"requesterId": requesterId, "targetId": targetId})
+	if err != nil {
+		return false, err
+	}
+	return result > 0, nil
 }
 
 func (m *mongoRepository) GetPendingFriendConnections(ctx context.Context, playerId uuid.UUID, opts DirectionOpts) ([]*model.PendingFriendConnection, error) {
