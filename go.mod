@@ -6,6 +6,7 @@ require (
 	github.com/emortalmc/proto-specs v0.0.0-20230205021056-683c5137db02
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/rabbitmq/amqp091-go v1.6.0
 	github.com/spf13/viper v1.15.0
 	go.mongodb.org/mongo-driver v1.11.1
@@ -18,7 +19,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

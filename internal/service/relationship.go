@@ -155,7 +155,10 @@ func (s *relationshipService) RemoveFriend(ctx context.Context, req *relationshi
 		return nil, err
 	}
 
-	s.notif.FriendRemoved(ctx, senderId, targetId)
+	err = s.notif.FriendRemoved(ctx, senderId, targetId)
+	if err != nil {
+		return nil, err
+	}
 
 	return &relationship.RemoveFriendResponse{
 		Result: relationship.RemoveFriendResponse_REMOVED,
