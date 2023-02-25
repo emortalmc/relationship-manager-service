@@ -14,9 +14,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Go
+      - name: Setup Go with Cache
         uses: actions/setup-go@v3
         with:
+          cache: true
           go-version-file: go.mod
 
       - name: Lint
