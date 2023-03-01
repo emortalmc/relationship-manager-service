@@ -26,7 +26,6 @@ type mongoRepository struct {
 var (
 	NotFriendsError      = errors.New("players are not friends")
 	NoFriendRequestError = errors.New("no friend request found")
-	NotBlockedError      = errors.New("player are not blocked")
 
 	AlreadyBlockedError = errors.New("player already blocked")
 )
@@ -215,7 +214,7 @@ func (m *mongoRepository) DeletePlayerBlock(ctx context.Context, blockerId uuid.
 		return err
 	}
 	if result.DeletedCount == 0 {
-		return NotBlockedError
+		return mongo.ErrNoDocuments
 	}
 	return nil
 }
