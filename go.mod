@@ -6,7 +6,7 @@ require (
 	github.com/emortalmc/proto-specs v0.0.0-20230301120655-d1ce11b2e963
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/rabbitmq/amqp091-go v1.7.0
 	github.com/spf13/viper v1.15.0
 	go.mongodb.org/mongo-driver v1.11.2
