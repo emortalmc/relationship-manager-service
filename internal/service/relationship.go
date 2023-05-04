@@ -18,12 +18,17 @@ import (
 
 type relationshipService struct {
 	relationship.RelationshipServer
+
+	logger *zap.SugaredLogger
+
 	repo  repository.Repository
 	notif kafka.Notifier
 }
 
-func NewPermissionService(repo repository.Repository, notif kafka.Notifier) relationship.RelationshipServer {
+func NewPermissionService(repo repository.Repository, logger *zap.SugaredLogger, notif kafka.Notifier) relationship.RelationshipServer {
 	return &relationshipService{
+		logger: logger,
+
 		repo:  repo,
 		notif: notif,
 	}
@@ -103,7 +108,7 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 		go func() {
 			err := s.notif.FriendAdded(ctx, senderId, targetId, req.Request.SenderUsername)
 			if err != nil {
-				zap.S().Errorf("failed to send friend added notification to %s: %v", targetId, err)
+				s.logger.Errorf("failed to send friend added notification to %s: %v", targetId, err)
 			}
 		}()
 
@@ -125,7 +130,7 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 		go func() {
 			err := s.notif.FriendRequest(ctx, req.Request)
 			if err != nil {
-				zap.S().Errorf("failed to send friend request notification to %s: %v", targetId, err)
+				s.logger.Errorf("failed to send friend request notification to %s: %v", targetId, err)
 			}
 		}()
 

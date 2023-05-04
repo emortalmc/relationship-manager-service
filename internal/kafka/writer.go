@@ -39,7 +39,7 @@ func NewKafkaNotifier(cfg *config.KafkaConfig, logger *zap.SugaredLogger) Notifi
 }
 
 func (k *kafkaNotifier) FriendRequest(ctx context.Context, fReq *relationship.FriendRequest) error {
-	ctx, cancel := context.WithTimeout(ctx, 5)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	msg := &pbmsg.FriendRequestReceivedMessage{
@@ -54,7 +54,7 @@ func (k *kafkaNotifier) FriendRequest(ctx context.Context, fReq *relationship.Fr
 }
 
 func (k *kafkaNotifier) FriendAdded(ctx context.Context, senderId uuid.UUID, targetId uuid.UUID, senderUsername string) error {
-	ctx, cancel := context.WithTimeout(ctx, 5)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	msg := &pbmsg.FriendAddedMessage{
@@ -71,7 +71,7 @@ func (k *kafkaNotifier) FriendAdded(ctx context.Context, senderId uuid.UUID, tar
 }
 
 func (k *kafkaNotifier) FriendRemoved(ctx context.Context, senderId uuid.UUID, targetId uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(ctx, 5)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	msg := &pbmsg.FriendRemovedMessage{
