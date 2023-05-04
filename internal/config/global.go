@@ -26,7 +26,7 @@ func LoadGlobalConfig() (cfg *Config, err error) {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
-	viper.SetConfigName("cfg")
+	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 
 	if err = viper.ReadInConfig(); err != nil {
