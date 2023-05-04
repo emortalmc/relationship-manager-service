@@ -41,7 +41,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogger) {
 			}
 		})),
 	))
-	relationship.RegisterRelationshipServer(s, service.NewPermissionService(repo, notif))
+	relationship.RegisterRelationshipServer(s, service.NewPermissionService(repo, logger, notif))
 	logger.Infow("listening on port", "port", cfg.Port)
 
 	err = s.Serve(lis)
