@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"relationship-manager-service/internal/notifier"
+	"relationship-manager-service/internal/kafka"
 	"relationship-manager-service/internal/repository"
 	"relationship-manager-service/internal/repository/model"
 )
@@ -19,10 +19,10 @@ import (
 type relationshipService struct {
 	relationship.RelationshipServer
 	repo  repository.Repository
-	notif notifier.Notifier
+	notif kafka.Notifier
 }
 
-func NewPermissionService(repo repository.Repository, notif notifier.Notifier) relationship.RelationshipServer {
+func NewPermissionService(repo repository.Repository, notif kafka.Notifier) relationship.RelationshipServer {
 	return &relationshipService{
 		repo:  repo,
 		notif: notif,

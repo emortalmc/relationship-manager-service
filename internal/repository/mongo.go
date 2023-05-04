@@ -30,7 +30,7 @@ var (
 	AlreadyBlockedError = errors.New("player already blocked")
 )
 
-func NewMongoRepository(ctx context.Context, cfg config.MongoDBConfig) (Repository, error) {
+func NewMongoRepository(ctx context.Context, cfg *config.MongoDBConfig) (Repository, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI).SetRegistry(createCodecRegistry()))
 	if err != nil {
 		return nil, err

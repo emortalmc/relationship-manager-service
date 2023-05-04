@@ -1,25 +1,28 @@
-FROM --platform=$BUILDPLATFORM golang:1.20 AS build
+FROM --platform=$BUILDPLATFORM golang:1.20-alpine AS build
 
-WORKDIR /app
+WORKDIR /build
 
 ## Copy go.mod and go.sum files, download dependencies so they are cached
 COPY go.mod go.sum ./
+
 RUN go mod download
 
 # Copy sources
-COPY cmd ./cmd
-COPY internal ./internal
+COPY . .
 
 ARG TARGETOS
 ARG TARGETARCH
 
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -ldflags="-s -w" -o relationship-manager-service ./cmd
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    CGO_ENABLED=0 \
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH \
+    go build -ldflags="-s -w" -o ./relationship-manager-service ./cmd
 
-FROM --platform=$BUILDPLATFORM alpine:3.17 AS app
+FROM alpine
 
 WORKDIR /app
 
-COPY --from=build /app/relationship-manager-service ./relationship-manager-service
-COPY run/config.yaml ./config.yaml
+COPY --from=build /build/./relationship-manager-service /build/run/ ./
 CMD ["./relationship-manager-service"]

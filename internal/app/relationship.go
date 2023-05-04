@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"net"
 	"relationship-manager-service/internal/config"
-	"relationship-manager-service/internal/notifier"
+	"relationship-manager-service/internal/kafka"
 	"relationship-manager-service/internal/repository"
 	"relationship-manager-service/internal/service"
 )
@@ -22,7 +22,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogger) {
 		logger.Fatalw("failed to create repository", "error", err)
 	}
 
-	notif, err := notifier.NewRabbitMqNotifier(cfg.RabbitMQ)
+	notif := kafka.NewKafkaNotifier(cfg.Kafka, logger)
 	if err != nil {
 		logger.Fatalw("failed to create notifier", "error", err)
 	}
