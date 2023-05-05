@@ -19,7 +19,7 @@ func Run(cfg *config.Config, logger *zap.SugaredLogger) {
 
 	// Mongo and Kafka get a delayed context to make sure they are shut down after requests are finished.
 	delayedWg := &sync.WaitGroup{}
-	delayedCtx, repoCancel := context.WithCancel(ctx)
+	delayedCtx, delayedCancel := context.WithCancel(ctx)
 
 	repo, err := repository.NewMongoRepository(delayedCtx, logger, delayedWg, cfg.MongoDB)
 	if err != nil {
@@ -37,6 +37,6 @@ func Run(cfg *config.Config, logger *zap.SugaredLogger) {
 	logger.Info("stopped services")
 
 	logger.Info("shutting down repository and kafka")
-	repoCancel()
+	delayedCancel()
 	delayedWg.Wait()
 }
