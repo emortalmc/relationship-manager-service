@@ -10,11 +10,15 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"relationship-manager-service/internal/config"
+	"sync"
 	"time"
 )
 
 const writeTopic = "relationship-manager"
 
+// Notifier is an interface for sending Kafka messages into the relationship-manager topic.
+//   - The context used should be independent of a request as kafka messages are sent lazily. Using a request context
+//     will result in the context being cancelled before the message is sent.
 type Notifier interface {
 	FriendRequest(ctx context.Context, request *relationship.FriendRequest) error
 	FriendAdded(ctx context.Context, senderId uuid.UUID, targetId uuid.UUID, senderUsername string) error
@@ -25,7 +29,7 @@ type kafkaNotifier struct {
 	w *kafka.Writer
 }
 
-func NewKafkaNotifier(cfg *config.KafkaConfig, logger *zap.SugaredLogger) Notifier {
+func NewKafkaNotifier(ctx context.Context, wg *sync.WaitGroup, cfg *config.KafkaConfig, logger *zap.SugaredLogger) Notifier {
 	w := &kafka.Writer{
 		Addr:         kafka.TCP(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)),
 		Topic:        writeTopic,
@@ -34,6 +38,16 @@ func NewKafkaNotifier(cfg *config.KafkaConfig, logger *zap.SugaredLogger) Notifi
 		BatchTimeout: 100 * time.Millisecond,
 		ErrorLogger:  kafka.LoggerFunc(logger.Errorw),
 	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		if err := w.Close(); err != nil {
+			logger.Errorw("failed to close kafka writer", "err", err)
+			return
+		}
+	}()
 
 	return &kafkaNotifier{w: w}
 }

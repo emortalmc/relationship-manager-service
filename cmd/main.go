@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"go.uber.org/zap"
 	"log"
 	"relationship-manager-service/internal/app"
@@ -19,9 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx := context.Background()
-
-	app.Run(ctx, cfg, logger)
+	app.Run(cfg, logger)
 }
 
 func createLogger(cfg *config.Config) (*zap.SugaredLogger, error) {

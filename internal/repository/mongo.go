@@ -12,6 +12,7 @@ import (
 	"relationship-manager-service/internal/config"
 	"relationship-manager-service/internal/repository/model"
 	"relationship-manager-service/internal/repository/registrytypes"
+	"sync"
 	"time"
 )
 
@@ -30,7 +31,7 @@ var (
 	AlreadyBlockedError = errors.New("player already blocked")
 )
 
-func NewMongoRepository(ctx context.Context, cfg *config.MongoDBConfig) (Repository, error) {
+func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync.WaitGroup, cfg *config.MongoDBConfig) (Repository, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI).SetRegistry(createCodecRegistry()))
 	if err != nil {
 		return nil, err
@@ -38,12 +39,23 @@ func NewMongoRepository(ctx context.Context, cfg *config.MongoDBConfig) (Reposit
 
 	database := client.Database("relationship-manager")
 
-	return &mongoRepository{
+	repo := &mongoRepository{
 		database:    database,
 		friendColl:  database.Collection("friend"),
 		pFriendColl: database.Collection("pendingFriend"),
 		blockColl:   database.Collection("block"),
-	}, nil
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		if err := client.Disconnect(ctx); err != nil {
+			logger.Errorw("failed to disconnect from mongo", err)
+		}
+	}()
+
+	return repo, nil
 }
 
 func (m *mongoRepository) CreateFriendConnection(ctx context.Context, conn model.FriendConnection) error {

@@ -19,14 +19,21 @@ import (
 type relationshipService struct {
 	relationship.RelationshipServer
 
+	ctx context.Context
+
 	logger *zap.SugaredLogger
 
 	repo  repository.Repository
 	notif kafka.Notifier
 }
 
-func NewPermissionService(repo repository.Repository, logger *zap.SugaredLogger, notif kafka.Notifier) relationship.RelationshipServer {
+// newPermissionService creates a new permission service
+// - Takes context as a request's context cannot be used (it will cancel before the kafka message is sent)
+func newPermissionService(ctx context.Context, repo repository.Repository, logger *zap.SugaredLogger,
+	notif kafka.Notifier) relationship.RelationshipServer {
 	return &relationshipService{
+		ctx: ctx,
+
 		logger: logger,
 
 		repo:  repo,
@@ -106,7 +113,7 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 		}
 
 		go func() {
-			err := s.notif.FriendAdded(ctx, senderId, targetId, req.Request.SenderUsername)
+			err := s.notif.FriendAdded(s.ctx, senderId, targetId, req.Request.SenderUsername)
 			if err != nil {
 				s.logger.Errorf("failed to send friend added notification to %s: %v", targetId, err)
 			}
@@ -128,7 +135,7 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 		}
 
 		go func() {
-			err := s.notif.FriendRequest(ctx, req.Request)
+			err := s.notif.FriendRequest(s.ctx, req.Request)
 			if err != nil {
 				s.logger.Errorf("failed to send friend request notification to %s: %v", targetId, err)
 			}
@@ -160,7 +167,7 @@ func (s *relationshipService) RemoveFriend(ctx context.Context, req *relationshi
 		return nil, err
 	}
 
-	err = s.notif.FriendRemoved(ctx, senderId, targetId)
+	err = s.notif.FriendRemoved(s.ctx, senderId, targetId)
 	if err != nil {
 		return nil, err
 	}
