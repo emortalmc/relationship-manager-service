@@ -17,8 +17,10 @@ import (
 )
 
 type mongoRepository struct {
-	Repository
-	database    *mongo.Database
+	logger *zap.SugaredLogger
+
+	database *mongo.Database
+
 	friendColl  *mongo.Collection
 	pFriendColl *mongo.Collection
 	blockColl   *mongo.Collection
@@ -40,7 +42,10 @@ func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync
 	database := client.Database("relationship-manager")
 
 	repo := &mongoRepository{
-		database:    database,
+		logger: logger,
+
+		database: database,
+
 		friendColl:  database.Collection("friend"),
 		pFriendColl: database.Collection("pendingFriend"),
 		blockColl:   database.Collection("block"),
@@ -149,7 +154,7 @@ func (m *mongoRepository) GetPendingFriendConnections(ctx context.Context, playe
 	}
 
 	if len(orFilters) == 0 {
-		zap.S().Warnw("no direction options provided", "playerId", playerId)
+		m.logger.Warnw("no direction options provided", "playerId", playerId)
 		return nil, errors.New("no direction options provided")
 	}
 
@@ -193,7 +198,7 @@ func (m *mongoRepository) DeletePendingFriendConnections(ctx context.Context, pl
 	}
 
 	if len(orFilters) == 0 {
-		zap.S().Warnw("no direction options provided", "playerId", playerId)
+		m.logger.Warnw("no direction options provided", "playerId", playerId)
 		return 0, nil
 	}
 

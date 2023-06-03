@@ -9,6 +9,8 @@ type Config struct {
 	Kafka   *KafkaConfig
 	MongoDB *MongoDBConfig
 
+	PlayerTrackerService *PlayerTrackerServiceConfig
+
 	Development bool
 	Port        uint16
 }
@@ -20,6 +22,11 @@ type KafkaConfig struct {
 
 type MongoDBConfig struct {
 	URI string
+}
+
+type PlayerTrackerServiceConfig struct {
+	Host string
+	Port uint16
 }
 
 func LoadGlobalConfig() (cfg *Config, err error) {

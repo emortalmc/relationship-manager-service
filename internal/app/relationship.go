@@ -4,6 +4,7 @@ import (
 	"context"
 	"go.uber.org/zap"
 	"os/signal"
+	"relationship-manager-service/internal/clients"
 	"relationship-manager-service/internal/config"
 	"relationship-manager-service/internal/kafka"
 	"relationship-manager-service/internal/repository"
@@ -32,6 +33,13 @@ func Run(cfg *config.Config, logger *zap.SugaredLogger) {
 	}
 
 	service.RunServices(ctx, logger, wg, cfg, repo, notif)
+
+	playerTracker, err := clients.NewPlayerTrackerClient(cfg.PlayerTrackerService)
+	if err != nil {
+		logger.Fatalw("failed to create player tracker client", "error", err)
+	}
+
+	kafka.NewConsumer(ctx, wg, cfg.Kafka, logger, repo, notif, playerTracker)
 
 	wg.Wait()
 	logger.Info("stopped services")

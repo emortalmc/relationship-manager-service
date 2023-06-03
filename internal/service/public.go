@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"net"
 	"relationship-manager-service/internal/config"
 	"relationship-manager-service/internal/kafka"
@@ -33,6 +34,11 @@ func RunServices(ctx context.Context, logger *zap.SugaredLogger, wg *sync.WaitGr
 			}
 		})),
 	))
+
+	if cfg.Development {
+		reflection.Register(s)
+	}
+
 	relationship.RegisterRelationshipServer(s, newPermissionService(ctx, repo, logger, notif))
 	logger.Infow("listening on port", "port", cfg.Port)
 

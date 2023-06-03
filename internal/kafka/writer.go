@@ -23,6 +23,8 @@ type Notifier interface {
 	FriendRequest(ctx context.Context, request *relationship.FriendRequest) error
 	FriendAdded(ctx context.Context, senderId uuid.UUID, targetId uuid.UUID, senderUsername string) error
 	FriendRemoved(ctx context.Context, senderId uuid.UUID, targetId uuid.UUID) error
+
+	FriendConnectStatus(ctx context.Context, playerId uuid.UUID, playerUsername string, joined bool, notifyPlayers []string) error
 }
 
 type kafkaNotifier struct {
@@ -82,6 +84,23 @@ func (k *kafkaNotifier) FriendRemoved(ctx context.Context, senderId uuid.UUID, t
 	msg := &pbmsg.FriendRemovedMessage{
 		SenderId:    senderId.String(),
 		RecipientId: targetId.String(),
+	}
+
+	if err := k.writeMessage(ctx, msg); err != nil {
+		return fmt.Errorf("failed to write message: %s", err)
+	}
+
+	return nil
+}
+
+func (k *kafkaNotifier) FriendConnectStatus(ctx context.Context, playerId uuid.UUID, playerUsername string, joined bool,
+	notifyPlayers []string) error {
+
+	msg := &pbmsg.FriendConnectionMessage{
+		MessageTargetIds: notifyPlayers,
+		PlayerId:         playerId.String(),
+		Username:         playerUsername,
+		Joined:           joined,
 	}
 
 	if err := k.writeMessage(ctx, msg); err != nil {
