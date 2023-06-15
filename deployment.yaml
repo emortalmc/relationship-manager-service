@@ -8,7 +8,7 @@ metadata:
     app: relationship-manager
 
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: relationship-manager
