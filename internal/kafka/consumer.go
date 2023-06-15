@@ -93,7 +93,7 @@ func (c *consumer) handlePlayerDisconnectMessage(ctx context.Context, _ *kafka.M
 		return
 	}
 
-	c.handleConnectionMessage(ctx, pId, msg.PlayerId, false)
+	c.handleConnectionMessage(ctx, pId, msg.PlayerUsername, false)
 }
 
 func (c *consumer) handleConnectionMessage(ctx context.Context, pId uuid.UUID, username string, joined bool) {
