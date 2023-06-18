@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
@@ -16,21 +17,21 @@ import (
 	"time"
 )
 
+var _ Repository = (*mongoRepository)(nil)
+
 type mongoRepository struct {
 	logger *zap.SugaredLogger
 
 	database *mongo.Database
 
-	friendColl  *mongo.Collection
-	pFriendColl *mongo.Collection
-	blockColl   *mongo.Collection
+	friendColl        *mongo.Collection
+	pendingFriendColl *mongo.Collection
+	blockColl         *mongo.Collection
 }
 
 var (
 	NotFriendsError      = errors.New("players are not friends")
 	NoFriendRequestError = errors.New("no friend request found")
-
-	AlreadyBlockedError = errors.New("player already blocked")
 )
 
 func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync.WaitGroup, cfg *config.MongoDBConfig) (Repository, error) {
@@ -46,10 +47,12 @@ func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync
 
 		database: database,
 
-		friendColl:  database.Collection("friend"),
-		pFriendColl: database.Collection("pendingFriend"),
-		blockColl:   database.Collection("block"),
+		friendColl:        database.Collection("friend"),
+		pendingFriendColl: database.Collection("pendingFriend"),
+		blockColl:         database.Collection("block"),
 	}
+
+	repo.createIndexes(ctx)
 
 	wg.Add(1)
 	go func() {
@@ -61,6 +64,91 @@ func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync
 	}()
 
 	return repo, nil
+}
+
+var (
+	friendIndexes = []mongo.IndexModel{
+		{ // Combined friend index
+			Keys:    bson.M{"playerOneId": 1, "playerTwoId": 1},
+			Options: options.Index().SetName("playerOneId_playerTwoId").SetUnique(true),
+		},
+		// Singular friend indexes
+		{
+			Keys:    bson.M{"playerOneId": 1},
+			Options: options.Index().SetName("playerOneId"),
+		},
+		{
+			Keys:    bson.M{"playerTwoId": 1},
+			Options: options.Index().SetName("playerTwoId"),
+		},
+	}
+
+	pendingFriendIndexes = []mongo.IndexModel{
+		{ // Combined pending friend index
+			Keys:    bson.M{"requesterId": 1, "targetId": 1},
+			Options: options.Index().SetName("requesterId_targetId").SetUnique(true),
+		},
+		// Singular pending friend indexes
+		{
+			Keys:    bson.M{"requesterId": 1},
+			Options: options.Index().SetName("requesterId"),
+		},
+		{
+			Keys:    bson.M{"targetId": 1},
+			Options: options.Index().SetName("targetId"),
+		},
+	}
+
+	blockIndexes = []mongo.IndexModel{
+		{ // Combined block index
+			Keys:    bson.M{"blockerId": 1, "blockedId": 1},
+			Options: options.Index().SetName("blockerId_blockedId").SetUnique(true),
+		},
+		// Singular block indexes
+		{
+			Keys:    bson.M{"blockerId": 1},
+			Options: options.Index().SetName("blockerId"),
+		},
+		{
+			Keys:    bson.M{"blockedId": 1},
+			Options: options.Index().SetName("blockedId"),
+		},
+	}
+)
+
+func (m *mongoRepository) createIndexes(ctx context.Context) {
+	collIndexes := map[*mongo.Collection][]mongo.IndexModel{
+		m.friendColl:        friendIndexes,
+		m.pendingFriendColl: pendingFriendIndexes,
+		m.blockColl:         blockIndexes,
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(collIndexes))
+
+	for coll, indexes := range collIndexes {
+		go func(coll *mongo.Collection, indexes []mongo.IndexModel) {
+			defer wg.Done()
+			_, err := m.createCollIndexes(ctx, coll, indexes)
+			if err != nil {
+				panic(fmt.Sprintf("failed to create indexes for collection %s: %s", coll.Name(), err))
+			}
+		}(coll, indexes)
+	}
+
+	wg.Wait()
+}
+
+func (m *mongoRepository) createCollIndexes(ctx context.Context, coll *mongo.Collection, indexes []mongo.IndexModel) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	result, err := coll.Indexes().CreateMany(ctx, indexes)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(result), nil
 }
 
 func (m *mongoRepository) CreateFriendConnection(ctx context.Context, conn model.FriendConnection) error {
@@ -125,7 +213,7 @@ func (m *mongoRepository) CreatePendingFriendConnection(ctx context.Context, con
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	_, err := m.pFriendColl.InsertOne(ctx, conn)
+	_, err := m.pendingFriendColl.InsertOne(ctx, conn)
 	// todo NOTE: already exists is mongo.IsDuplicateKeyError(err)
 	return err
 }
@@ -134,7 +222,7 @@ func (m *mongoRepository) DoesPendingFriendConnectionExist(ctx context.Context, 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	result, err := m.pFriendColl.CountDocuments(ctx, bson.M{"requesterId": requesterId, "targetId": targetId})
+	result, err := m.pendingFriendColl.CountDocuments(ctx, bson.M{"requesterId": requesterId, "targetId": targetId})
 	if err != nil {
 		return false, err
 	}
@@ -158,7 +246,7 @@ func (m *mongoRepository) GetPendingFriendConnections(ctx context.Context, playe
 		return nil, errors.New("no direction options provided")
 	}
 
-	cursor, err := m.pFriendColl.Find(ctx, bson.M{"$or": orFilters})
+	cursor, err := m.pendingFriendColl.Find(ctx, bson.M{"$or": orFilters})
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +260,7 @@ func (m *mongoRepository) DeletePendingFriendConnection(ctx context.Context, pla
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	result, err := m.pFriendColl.DeleteOne(ctx, bson.M{"$or": []bson.M{
+	result, err := m.pendingFriendColl.DeleteOne(ctx, bson.M{"$or": []bson.M{
 		{"requesterId": playerId, "targetId": friendId},
 		{"requesterId": friendId, "targetId": playerId},
 	}})
@@ -202,82 +290,11 @@ func (m *mongoRepository) DeletePendingFriendConnections(ctx context.Context, pl
 		return 0, nil
 	}
 
-	result, err := m.pFriendColl.DeleteMany(ctx, bson.M{"$or": orFilters})
+	result, err := m.pendingFriendColl.DeleteMany(ctx, bson.M{"$or": orFilters})
 	if err != nil {
 		return 0, err
 	}
 	return result.DeletedCount, nil
-}
-
-func (m *mongoRepository) CreatePlayerBlock(ctx context.Context, block model.PlayerBlock) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	_, err := m.blockColl.InsertOne(ctx, block)
-
-	if mongo.IsDuplicateKeyError(err) {
-		return AlreadyBlockedError
-	}
-
-	return err
-}
-
-func (m *mongoRepository) DeletePlayerBlock(ctx context.Context, blockerId uuid.UUID, blockedId uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	result, err := m.blockColl.DeleteOne(ctx, bson.M{"blockerId": blockerId, "blockedId": blockedId})
-	if err != nil {
-		return err
-	}
-	if result.DeletedCount == 0 {
-		return mongo.ErrNoDocuments
-	}
-	return nil
-}
-
-func (m *mongoRepository) IsPlayerBlocked(ctx context.Context, playerOneId uuid.UUID, playerTwoId uuid.UUID) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	result, err := m.blockColl.CountDocuments(ctx, bson.M{"$or": []bson.M{
-		{"blockerId": playerOneId, "blockedId": playerTwoId},
-		{"blockerId": playerTwoId, "blockedId": playerOneId},
-	}})
-	if err != nil {
-		return false, err
-	}
-	return result > 0, nil
-}
-
-func (m *mongoRepository) GetMutualBlocks(ctx context.Context, playerOneId uuid.UUID, playerTwoId uuid.UUID) ([]*model.PlayerBlock, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	cursor, err := m.blockColl.Find(ctx, bson.M{"$or": []bson.M{
-		{"blockerId": playerOneId, "blockedId": playerTwoId},
-		{"blockerId": playerTwoId, "blockedId": playerOneId},
-	}})
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*model.PlayerBlock, 0)
-	err = cursor.All(ctx, &result)
-	return result, err
-}
-
-func (m *mongoRepository) GetPlayerBlocks(ctx context.Context, playerId uuid.UUID) ([]*model.PlayerBlock, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	cursor, err := m.blockColl.Find(ctx, bson.M{"blockerId": playerId})
-	if err != nil {
-		return nil, err
-	}
-	result := make([]*model.PlayerBlock, 0)
-	err = cursor.All(ctx, &result)
-	return result, err
 }
 
 func createCodecRegistry() *bsoncodec.Registry {
