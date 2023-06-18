@@ -69,7 +69,7 @@ func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync
 var (
 	friendIndexes = []mongo.IndexModel{
 		{ // Combined friend index
-			Keys:    bson.M{"playerOneId": 1, "playerTwoId": 1},
+			Keys:    bson.D{{Key: "playerOneId", Value: 1}, {Key: "playerTwoId", Value: 1}},
 			Options: options.Index().SetName("playerOneId_playerTwoId").SetUnique(true),
 		},
 		// Singular friend indexes
@@ -85,7 +85,7 @@ var (
 
 	pendingFriendIndexes = []mongo.IndexModel{
 		{ // Combined pending friend index
-			Keys:    bson.M{"requesterId": 1, "targetId": 1},
+			Keys:    bson.D{{Key: "requesterId", Value: 1}, {Key: "targetId", Value: 1}},
 			Options: options.Index().SetName("requesterId_targetId").SetUnique(true),
 		},
 		// Singular pending friend indexes
@@ -101,7 +101,7 @@ var (
 
 	blockIndexes = []mongo.IndexModel{
 		{ // Combined block index
-			Keys:    bson.M{"blockerId": 1, "blockedId": 1},
+			Keys:    bson.D{{Key: "blockerId", Value: 1}, {Key: "blockedId", Value: 1}},
 			Options: options.Index().SetName("blockerId_blockedId").SetUnique(true),
 		},
 		// Singular block indexes
