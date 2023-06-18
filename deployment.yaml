@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: relationship-manager
-          image: ghcr.io/emortalmc/relationship-manager-service:35c51929c4ed9c6508b6698b4f89324c9baf7601
+          image: ghcr.io/emortalmc/relationship-manager-service:dad1cf618663bcd4fe18fbe8daf63d378ce2c57c
           ports:
             - name: grpc
               containerPort: 9010
