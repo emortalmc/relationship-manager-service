@@ -17,8 +17,6 @@ import (
 	"time"
 )
 
-var _ Repository = (*mongoRepository)(nil)
-
 type mongoRepository struct {
 	logger *zap.SugaredLogger
 
@@ -151,7 +149,7 @@ func (m *mongoRepository) createCollIndexes(ctx context.Context, coll *mongo.Col
 	return len(result), nil
 }
 
-func (m *mongoRepository) CreateFriendConnection(ctx context.Context, conn model.FriendConnection) error {
+func (m *mongoRepository) CreateFriendConnection(ctx context.Context, conn *model.FriendConnection) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -209,7 +207,7 @@ func (m *mongoRepository) AreFriends(ctx context.Context, playerOneId uuid.UUID,
 	return result > 0, nil
 }
 
-func (m *mongoRepository) CreatePendingFriendConnection(ctx context.Context, conn model.PendingFriendConnection) error {
+func (m *mongoRepository) CreatePendingFriendConnection(ctx context.Context, conn *model.PendingFriendConnection) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -273,7 +271,7 @@ func (m *mongoRepository) DeletePendingFriendConnection(ctx context.Context, pla
 	return nil
 }
 
-func (m *mongoRepository) DeletePendingFriendConnections(ctx context.Context, playerId uuid.UUID, opts DirectionOpts) (int64, error) {
+func (m *mongoRepository) DeletePendingFriendConnections(ctx context.Context, playerId uuid.UUID, opts *DirectionOpts) (int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

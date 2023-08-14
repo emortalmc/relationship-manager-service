@@ -97,7 +97,7 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 
 	if oppositeRequest {
 		// create friendship
-		err = s.repo.CreateFriendConnection(ctx, model.FriendConnection{
+		err = s.repo.CreateFriendConnection(ctx, &model.FriendConnection{
 			Id:          primitive.NewObjectID(),
 			PlayerOneId: senderId,
 			PlayerTwoId: targetId,
@@ -129,7 +129,7 @@ func (s *relationshipService) AddFriend(ctx context.Context, req *relationship.A
 			RequesterId: senderId,
 			TargetId:    targetId,
 		}
-		err = s.repo.CreatePendingFriendConnection(ctx, friendConn)
+		err = s.repo.CreatePendingFriendConnection(ctx, &friendConn)
 		if err != nil {
 			return nil, err
 		}
@@ -219,7 +219,7 @@ func (s *relationshipService) MassDenyFriendRequest(ctx context.Context, req *re
 		}
 	}
 
-	count, err := s.repo.DeletePendingFriendConnections(ctx, senderId, opts)
+	count, err := s.repo.DeletePendingFriendConnections(ctx, senderId, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ func (s *relationshipService) CreateBlock(ctx context.Context, req *relationship
 		}, nil
 	}
 
-	err = s.repo.CreatePlayerBlock(ctx, model.PlayerBlock{BlockedId: blockedId, BlockerId: blockerId})
+	err = s.repo.CreatePlayerBlock(ctx, &model.PlayerBlock{Id: primitive.NewObjectID(), BlockedId: blockedId, BlockerId: blockerId})
 
 	if err != nil {
 		if err == repository.AlreadyBlockedError {

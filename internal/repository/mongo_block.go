@@ -14,7 +14,7 @@ var (
 	AlreadyBlockedError = errors.New("player already blocked")
 )
 
-func (m *mongoRepository) CreatePlayerBlock(ctx context.Context, block model.PlayerBlock) error {
+func (m *mongoRepository) CreatePlayerBlock(ctx context.Context, block *model.PlayerBlock) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
