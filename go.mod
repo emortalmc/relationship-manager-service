@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/emortalmc/proto-specs/gen/go v0.0.0-20230603025104-57cd02807c17
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/segmentio/kafka-go v0.4.42
 	github.com/spf13/viper v1.16.0
