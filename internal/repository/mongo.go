@@ -244,7 +244,7 @@ func (m *mongoRepository) GetPendingFriendConnections(ctx context.Context, playe
 		return nil, errors.New("no direction options provided")
 	}
 
-	cursor, err := m.pendingFriendColl.Find(ctx, bson.M{"$or": orFilters})
+	cursor, err := m.pendingFriendColl.Find(ctx, bson.M{"$or": orFilters}, options.Find().SetSort(bson.M{"_id": -1}))
 	if err != nil {
 		return nil, err
 	}
