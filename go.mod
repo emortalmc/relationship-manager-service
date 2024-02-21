@@ -9,7 +9,7 @@ require (
 	github.com/segmentio/kafka-go v0.4.46
 	github.com/spf13/viper v1.17.0
 	go.mongodb.org/mongo-driver v1.13.1
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.58.2
 	google.golang.org/protobuf v1.31.0
 )
@@ -36,7 +36,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.uber.org/goleak v1.2.1 // indirect
+	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
