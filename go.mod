@@ -3,7 +3,7 @@ module relationship-manager-service
 go 1.19
 
 require (
-	github.com/emortalmc/proto-specs/gen/go v0.0.0-20230603025104-57cd02807c17
+	github.com/emortalmc/proto-specs/gen/go 6a9ad1aff227
 	github.com/google/uuid v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/segmentio/kafka-go v0.4.46
